@@ -1,23 +1,17 @@
-
 package it.uniroma3.diadia;
-import java.util.Scanner;
 
-import it.uniroma3.diadia.ambienti.Stanza;
-import it.uniroma3.diadia.attrezzi.Attrezzo;
+import it.uniroma3.diadia.comandi.Comando;
+import it.uniroma3.diadia.comandi.FabbricaDiComandi;
+import it.uniroma3.diadia.comandi.FabbricaDiComandiFisarmonica;
 
 /**
  * Classe principale di diadia, un semplice gioco di ruolo ambientato al dia.
- * Per giocare crea un'istanza di questa classe e invoca il letodo gioca
+ * Per giocare crea un'istanza di questa classe e invoca il metodo gioca
  *
- * Questa e' la classe principale crea e istanzia tutte le altre
- *
- * @author  docente di POO 
- *         (da un'idea di Michael Kolling and David J. Barnes) 
- *          
+ * @author  docente di POO
+ *         (da un'idea di Michael Kolling and David J. Barnes)
  * @version base
  */
-
-
 public class DiaDia {
 
 	static final private String MESSAGGIO_BENVENUTO = ""+
@@ -29,108 +23,34 @@ public class DiaDia {
 			"puoi raccoglierli, usarli, posarli quando ti sembrano inutili\n" +
 			"o regalarli se pensi che possano ingraziarti qualcuno.\n\n"+
 			"Per conoscere le istruzioni usa il comando 'aiuto'.";
-	
-	static final private String[] elencoComandi = {"vai", "aiuto", "fine", "prendi", "posa"};
 
 	private Partita partita;
-	private IOConsole io;
-	
+	private IO io;
+	private FabbricaDiComandi fabbrica;
 
-	public DiaDia(IOConsole io) {
+	public DiaDia(IO io) {
 		this.io = io;
 		this.partita = new Partita();
-		
+		this.fabbrica = new FabbricaDiComandiFisarmonica(io);
 	}
 
 	public void gioca() {
-		String istruzione; 
-
-		io.mostraMessaggio(MESSAGGIO_BENVENUTO);	
-		do		
-			istruzione = io.leggiRiga();
-		while (!processaIstruzione(istruzione));
-	}   
-
-
-	/**
-	 * Processa una istruzione 
-	 *
-	 * @return true se l'istruzione e' eseguita e il gioco continua, false altrimenti
-	 */
-	private boolean processaIstruzione(String istruzione) {
-		Comando comandoDaEseguire = new Comando(istruzione);
-
-		if (comandoDaEseguire.getNome().equals("fine")) {
-			this.fine(); 
-			return true;
-		} else if (comandoDaEseguire.getNome().equals("vai"))
-			this.vai(comandoDaEseguire.getParametro());
-		else if (comandoDaEseguire.getNome().equals("aiuto"))
-			this.aiuto();
-		else
-			io.mostraMessaggio("Comando sconosciuto");
-		if (this.partita.vinta()) {
+		io.mostraMessaggio(MESSAGGIO_BENVENUTO);
+		while (!partita.isFinita()) {
+			String istruzione = io.leggiRiga();
+			processaIstruzione(istruzione);
+		}
+		if (partita.vinta())
 			io.mostraMessaggio("Hai vinto!");
-			return true;
-		} else
-			return false;
-	}   
-
-	// implementazioni dei comandi dell'utente:
-	public Attrezzo prendiAttrezzo(String nomeAttrezzo) {
-		Attrezzo attrezzo = partita.getStanzaCorrente().getAttrezzo(nomeAttrezzo);
-		if(attrezzo!=null) {
-			partita.getGiocatore().getBorsa().addAttrezzo(attrezzo);
-			partita.getStanzaCorrente().removeAttrezzo(attrezzo);
-		}
-		return attrezzo;
-	}
-	
-	public Attrezzo posaAttrezzo(String nomeAttrezzo) {
-		Attrezzo attrezzo = partita.getGiocatore().getBorsa().getAttrezzo(nomeAttrezzo);
-		if(attrezzo!=null) {
-			partita.getGiocatore().getBorsa().removeAttrezzo(nomeAttrezzo);
-			partita.getStanzaCorrente().addAttrezzo(attrezzo);
-		}
-		return attrezzo;
-	}
-	/**
-	 * Stampa informazioni di aiuto.
-	 */
-	private void aiuto() {
-		for(int i=0; i< elencoComandi.length; i++) 
-			io.mostraMessaggio(elencoComandi[i]+" ");
-		io.mostraMessaggio("");
 	}
 
-	/**
-	 * Cerca di andare in una direzione. Se c'e' una stanza ci entra 
-	 * e ne stampa il nome, altrimenti stampa un messaggio di errore
-	 */
-	private void vai(String direzione) {
-		if(direzione==null)
-			io.mostraMessaggio("Dove vuoi andare ?");
-		Stanza prossimaStanza = null;
-		prossimaStanza = this.partita.getStanzaCorrente().getStanzaAdiacente(direzione);
-		if (prossimaStanza == null)
-			io.mostraMessaggio("Direzione inesistente");
-		else {
-			this.partita.setStanzaCorrente(prossimaStanza);
-			int cfu = this.partita.getCfu();
-			this.partita.setCfu(cfu--);
-		}
-		io.mostraMessaggio(partita.getStanzaCorrente().getDescrizione());
-	}
-
-	/**
-	 * Comando "Fine".
-	 */
-	private void fine() {
-		io.mostraMessaggio("Grazie di aver giocato!");  // si desidera smettere
+	private void processaIstruzione(String istruzione) {
+		Comando comando = fabbrica.costruisciComando(istruzione);
+		comando.esegui(partita);
 	}
 
 	public static void main(String[] argc) {
-		IOConsole io = new IOConsole();
+		IO io = new IOConsole();
 		DiaDia gioco = new DiaDia(io);
 		gioco.gioca();
 	}
