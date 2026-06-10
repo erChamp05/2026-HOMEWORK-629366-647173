@@ -1,0 +1,17 @@
+package it.uniroma3.diadia.comandi;
+
+import it.uniroma3.diadia.Partita;
+import it.uniroma3.diadia.personaggi.AbstractPersonaggio;
+
+public class ComandoInteragisci extends AbstractComando {
+
+	@Override
+	public void esegui(Partita partita) {
+		AbstractPersonaggio personaggio = partita.getStanzaCorrente().getPersonaggio();
+		if (personaggio == null) {
+			io.mostraMessaggio("Non c'e' nessuno con cui interagire qui.");
+			return;
+		}
+		io.mostraMessaggio(personaggio.agisci(partita));
+	}
+}
